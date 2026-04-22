@@ -1,3 +1,4 @@
+#include <cmath>
 // Controller class definition and get_v_next implementation
 class Monitor;
 
@@ -21,8 +22,9 @@ public:
         double dist2 = to_tar.dot(to_tar);
         if (!(dist2 < 1e300)) return Vec(0.0, 0.0);
         if (dist2 <= 1e-12) return Vec(0.0, 0.0);
-        double dist = to_tar.len();
-        Vec dir = to_tar * (1.0 / (dist > 1e-12 ? dist : 1.0));
+        double dist = std::sqrt(dist2);
+        if (!(dist > 0.0)) return Vec(0.0, 0.0);
+        Vec dir = to_tar * (1.0 / dist);
 
         double sp = dist / tau;
         double desired_speed = (sp < v_max ? sp : v_max);
@@ -56,17 +58,12 @@ public:
         Vec v = dir * desired_speed;
         if (is_safe(v)) return v;
 
-        const double scales[] = {0.9, 0.7, 0.5, 0.3, 0.15, 0.0};
-        const double deg2rad = 3.141592653589793238462643383279502884 / 180.0;
-        const double angles_deg[] = {0, 15, -15, 30, -30, 60, -60, 90, -90, 135, -135, 180};
-
+        const double scales[] = {1.0, 0.9, 0.7, 0.5, 0.3, 0.15, 0.0};
         for (double s : scales) {
             Vec base = dir * (desired_speed * s);
-            for (double a_deg : angles_deg) {
-                double a = a_deg * deg2rad;
-                Vec cand = base.rot(a);
-                if (is_safe(cand)) return cand;
-            }
+            if (is_safe(base)) return base;
+            Vec neg = base * (-1.0);
+            if (is_safe(neg)) return neg;
         }
         return Vec(0.0, 0.0);
     }
