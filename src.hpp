@@ -21,15 +21,15 @@ static constexpr double OH_TAU = 0.1;
 // Helper: compute minimum squared distance between two discs' centers over [0, tau]
 // given relative position r0 and relative velocity vrel.
 static inline double oh_min_dist2_over_interval(const Vec &r0, const Vec &vrel, double tau) {
-    double v2 = vrel * vrel; // dot product
+    double v2 = vrel.dot(vrel);
     if (v2 <= 1e-12) {
-        return r0 * r0;
+        return r0.dot(r0);
     }
-    double tstar = - (r0 * vrel) / v2;
+    double tstar = - (r0.dot(vrel)) / v2;
     if (tstar < 0.0) tstar = 0.0;
     if (tstar > tau) tstar = tau;
     Vec d = r0 + vrel * tstar;
-    return d * d;
+    return d.dot(d);
 }
 
 // Attempt to check if a candidate velocity v for this robot is safe w.r.t all others over next tau
@@ -55,7 +55,7 @@ Vec Controller::get_v_next() {
 
     // Direction toward target
     Vec to_tar = pos_tar - pos_cur;
-    double dist2 = to_tar * to_tar;
+    double dist2 = to_tar.dot(to_tar);
     double dist = (dist2 > 0.0) ? std::sqrt(dist2) : 0.0;
     const double eps = 1e-6;
     if (!(dist < 1e300) || std::isnan(dist)) {
