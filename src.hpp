@@ -29,7 +29,7 @@ public:
         double sp = dist / tau;
         double desired_speed = (sp < v_max ? sp : v_max);
         // Yield more for higher IDs to reduce conflicts
-        double id_scale = 1.0 + 0.05 * (id >= 0 ? id : 0);
+        double id_scale = 1.0 + 0.02 * (id >= 0 ? id : 0);
         desired_speed = desired_speed / id_scale;
         if (!(desired_speed >= 0.0)) desired_speed = 0.0;
 
