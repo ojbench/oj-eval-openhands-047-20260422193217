@@ -70,6 +70,9 @@ public:
             if (sp2 > v_max) sp2 = v_max;
             Vec cand_cur = cur_dir * sp2;
             if (is_safe(cand_cur)) return cand_cur;
+            // Also try opposite of current direction
+            Vec cand_cur_neg = cur_dir * (-sp2);
+            if (is_safe(cand_cur_neg)) return cand_cur_neg;
             // Try linear combination directions between target and current velocity
             Vec sum = dir + cur_dir;
             double sum2 = sum.dot(sum);
@@ -77,6 +80,8 @@ public:
                 Vec sum_u = sum * (1.0 / std::sqrt(sum2));
                 Vec cand_sum = sum_u * sp2;
                 if (is_safe(cand_sum)) return cand_sum;
+                Vec cand_sum_half = sum_u * (sp2 * 0.5);
+                if (is_safe(cand_sum_half)) return cand_sum_half;
             }
             Vec diff = dir - cur_dir;
             double diff2 = diff.dot(diff);
@@ -84,6 +89,8 @@ public:
                 Vec diff_u = diff * (1.0 / std::sqrt(diff2));
                 Vec cand_diff = diff_u * sp2;
                 if (is_safe(cand_diff)) return cand_diff;
+                Vec cand_diff_half = diff_u * (sp2 * 0.5);
+                if (is_safe(cand_diff_half)) return cand_diff_half;
             }
         }
 
