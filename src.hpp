@@ -94,6 +94,42 @@ public:
             }
         }
 
+        // Try tangent directions w.r.t nearest neighbors
+        int Nnb = monitor->get_robot_number();
+        int sel[3] = {-1, -1, -1};
+        for (int k = 0; k < 3; ++k) {
+            double best_d2 = 1e100;
+            int best_j = -1;
+            for (int j = 0; j < Nnb; ++j) {
+                if (j == id) continue;
+                if (j == sel[0] || j == sel[1] || j == sel[2]) continue;
+                Vec pj = monitor->get_pos_cur(j);
+                Vec r0n = pos_cur - pj;
+                double d2 = r0n.dot(r0n);
+                if (d2 < best_d2) { best_d2 = d2; best_j = j; }
+            }
+            if (best_j < 0) break;
+            sel[k] = best_j;
+            Vec pj = monitor->get_pos_cur(best_j);
+            Vec r0n = pos_cur - pj;
+            double r02 = r0n.dot(r0n);
+            if (r02 <= 1e-12) continue;
+            double proj = dir.dot(r0n) / r02;
+            Vec w = dir - r0n * proj;
+            double w2 = w.dot(w);
+            if (w2 > 1e-12) {
+                double wn = std::sqrt(w2);
+                Vec w_u = w * (1.0 / wn);
+                const double scales_lat[] = {1.0, 0.8, 0.6, 0.4};
+                for (double s : scales_lat) {
+                    Vec cand = w_u * (desired_speed * s);
+                    if (is_safe(cand)) return cand;
+                    Vec cand2 = cand * (-1.0);
+                    if (is_safe(cand2)) return cand2;
+                }
+            }
+        }
+
         // Fallbacks: try original direction with speed scaling, and reverse
         const double scales[] = {1.0, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0};
         for (double s : scales) {
