@@ -70,10 +70,25 @@ public:
             if (sp2 > v_max) sp2 = v_max;
             Vec cand_cur = cur_dir * sp2;
             if (is_safe(cand_cur)) return cand_cur;
+            // Try linear combination directions between target and current velocity
+            Vec sum = dir + cur_dir;
+            double sum2 = sum.dot(sum);
+            if (sum2 > 1e-12) {
+                Vec sum_u = sum * (1.0 / std::sqrt(sum2));
+                Vec cand_sum = sum_u * sp2;
+                if (is_safe(cand_sum)) return cand_sum;
+            }
+            Vec diff = dir - cur_dir;
+            double diff2 = diff.dot(diff);
+            if (diff2 > 1e-12) {
+                Vec diff_u = diff * (1.0 / std::sqrt(diff2));
+                Vec cand_diff = diff_u * sp2;
+                if (is_safe(cand_diff)) return cand_diff;
+            }
         }
 
         // Fallbacks: try original direction with speed scaling, and reverse
-        const double scales[] = {1.0, 0.9, 0.7, 0.5, 0.3, 0.15, 0.0};
+        const double scales[] = {1.0, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0};
         for (double s : scales) {
             Vec base = dir * (desired_speed * s);
             if (is_safe(base)) return base;
