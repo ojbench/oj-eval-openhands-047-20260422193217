@@ -61,7 +61,18 @@ public:
         Vec v = dir * desired_speed;
         if (is_safe(v)) return v;
 
-        // Fallbacks: try original direction and speed scaling, and reverse
+        // Try continuing along current velocity direction
+        double curv2 = v_cur.dot(v_cur);
+        if (curv2 > 1e-12) {
+            double curv = std::sqrt(curv2);
+            Vec cur_dir = v_cur * (1.0 / curv);
+            double sp2 = desired_speed;
+            if (sp2 > v_max) sp2 = v_max;
+            Vec cand_cur = cur_dir * sp2;
+            if (is_safe(cand_cur)) return cand_cur;
+        }
+
+        // Fallbacks: try original direction with speed scaling, and reverse
         const double scales[] = {1.0, 0.9, 0.7, 0.5, 0.3, 0.15, 0.0};
         for (double s : scales) {
             Vec base = dir * (desired_speed * s);
