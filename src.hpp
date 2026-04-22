@@ -28,6 +28,9 @@ public:
 
         double sp = dist / tau;
         double desired_speed = (sp < v_max ? sp : v_max);
+        // Yield more for higher IDs to reduce conflicts
+        double id_scale = 1.0 + 0.25 * (id >= 0 ? id : 0);
+        desired_speed = desired_speed / id_scale;
         if (!(desired_speed >= 0.0)) desired_speed = 0.0;
 
         auto min_dist2_interval = [&](const Vec &r0, const Vec &vrel, double T) -> double {
@@ -55,9 +58,37 @@ public:
             return true;
         };
 
-        Vec v = dir * desired_speed;
+        // Compute simple repulsion from nearby robots
+        Vec rep(0.0, 0.0);
+        int Nnb = monitor->get_robot_number();
+        for (int j = 0; j < Nnb; ++j) {
+            if (j == id) continue;
+            Vec pj = monitor->get_pos_cur(j);
+            double Rsum = r + monitor->get_r(j);
+            Vec r0n = pos_cur - pj;
+            double d2 = r0n.dot(r0n);
+            double infR = Rsum * 5.0;
+            double inf2 = infR * infR;
+            if (d2 < inf2 && d2 > 1e-12) {
+                double w = (Rsum * Rsum) / (d2 + 1e-9);
+                rep = rep + r0n * w;
+            }
+        }
+        Vec dir_comb = dir;
+        double beta = 0.8;
+        double rep2 = rep.dot(rep);
+        if (rep2 > 1e-12) {
+            double repn = std::sqrt(rep2);
+            Vec rep_u = rep * (1.0 / repn);
+            Vec tentative = dir - rep_u * beta;
+            double t2 = tentative.dot(tentative);
+            if (t2 > 1e-12) dir_comb = tentative * (1.0 / std::sqrt(t2));
+        }
+
+        Vec v = dir_comb * desired_speed;
         if (is_safe(v)) return v;
 
+        // Fallbacks: try original direction and speed scaling, and reverse
         const double scales[] = {1.0, 0.9, 0.7, 0.5, 0.3, 0.15, 0.0};
         for (double s : scales) {
             Vec base = dir * (desired_speed * s);
